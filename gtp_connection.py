@@ -302,9 +302,17 @@ class GtpConnection:
         self.respond('unknown')
 
     def gogui_rules_legal_moves_cmd(self, args):
-        """ Implement this function for Assignment 1 """
-        self.respond()
-        return
+        colour = args.lower()
+        potenial_moves=board.get_empty_points#Aim is to get all current empty points
+        legal_move_list=[]#Empty return list
+        for i in range(0,potenial_moves.size()):#Loop through all possible empty points
+            #Aim below is to chec if it can potentially play on the area, if passed the 2 simple checks, check capture and suicide
+            if (board.is_legal(potential_moves[i],colour)==True)&&(board._is_legal_check_simple_cases(potential_moves[i],colour)==True):
+                if (board.play_move(potential_moves[i],colour))==True:
+                    legal_move_list.append(potential_moves)
+        legal_move_list=format_point(legal_move_list)#I dont think this will work as well but not sure
+        self.respond(legal_move_list)
+        return legal_move_list
 
     def play_cmd(self, args: List[str]) -> None:
         """

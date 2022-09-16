@@ -329,6 +329,15 @@ class GtpConnection:
                 return
             coord = move_to_coord(args[1], self.board.size)
             move = coord_to_point(coord[0], coord[1], self.board.size)
+            print("move played", move)
+            print("empty points", self.board.get_empty_points())
+            #steps:
+            '''
+            (a): if the move played is not in list of current empty points on the board, it is occupied 
+            '''
+            if  move not in self.board.get_empty_points():
+                self.respond("occupied")
+                return
             if not self.board.play_move(move, color):
                 self.respond("Illegal Move: {}".format(board_move))
                 return

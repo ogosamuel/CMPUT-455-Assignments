@@ -282,7 +282,24 @@ class GtpConnection:
     """
     def gogui_rules_final_result_cmd(self, args):
         """ Implement this function for Assignment 1 """
-        self.respond("unknown")
+        """
+            1: find player whose turn it is to play
+            2: check if the player has any legal moves 
+            3: if the list is empty / player has no legal move, the player loses the game
+            4: output opponent of that player above, this is the winner
+        """
+        next_player = self.board.current_player
+        player_turnColor: str = "b" if next_player == 1 else "w"
+        color: GO_COLOR = color_to_int(player_turnColor)
+        #checking if player has any legal moves left
+        moves_left = GoBoardUtil.generate_legal_moves(self.board, color)
+        #set output color for the winner 
+        str_gen = "black" if opponent(next_player) == 1 else "white"
+        #if the list is empty, the player loses and output opponent color 
+        if not moves_left:
+            self.respond(str_gen)
+            return
+        self.respond('unknown')
 
     def gogui_rules_legal_moves_cmd(self, args):
         """ Implement this function for Assignment 1 """
@@ -316,12 +333,15 @@ class GtpConnection:
             self.respond("Error: {}".format(str(e)))
 
     def genmove_cmd(self, args: List[str]) -> None:
-        """ generate a move for color args[0] in {'b','w'} """
         board_color = args[0].lower()
         color = color_to_int(board_color)
+        moves_left = GoBoardUtil.generate_legal_moves(self.board, color)
         move = self.go_engine.get_move(self.board, color)
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
+        if not moves_left:
+            self.respond('resign')
+            return
         if self.board.is_legal(move, color):
             self.board.play_move(move, color)
             self.respond(move_as_string)

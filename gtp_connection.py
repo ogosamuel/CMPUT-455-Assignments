@@ -300,15 +300,14 @@ class GtpConnection:
             self.respond(str_gen)
             return
         self.respond('unknown')
-
+    ##capturing or suicide not allowed
     def gogui_rules_legal_moves_cmd(self, args):
         colour = args.lower()
-        potenial_moves=board.get_empty_points#Aim is to get all current empty points
+        potential_moves=self.board.get_empty_points#Aim is to get all current empty points
         legal_move_list=[]#Empty return list
-        for i in range(0,potenial_moves.size()):#Loop through all possible empty points
+        for i in range(0,potential_moves.size()):#Loop through all possible empty points
             #Aim below is to chec if it can potentially play on the area, if passed the 2 simple checks, check capture and suicide
-            if (board.is_legal(potential_moves[i],colour)==True)&&(board._is_legal_check_simple_cases(potential_moves[i],colour)==True):
-                if (board.play_move(potential_moves[i],colour))==True:
+            if (self.board.play_move(potential_moves[i],colour))==True:
                     legal_move_list.append(potential_moves)
         legal_move_list=format_point(legal_move_list)#I dont think this will work as well but not sure
         self.respond(legal_move_list)
@@ -318,23 +317,26 @@ class GtpConnection:
         """
         play a move args[1] for given color args[0] in {'b','w'}
         """
+        
         try:
             board_color = args[0].lower()
             board_move = args[1]
-            color = color_to_int(board_color)
-            if args[1].lower() == "pass":
-                self.board.play_move(PASS, color)
-                self.board.current_player = opponent(color)
-                self.respond()
+            
+            
+            if (board_color != 'b' and board_color != 'w'):
+                self.respond("illegal move: \"{} {}\" wrong color".format(args[0], args[1]))
                 return
+            if args[1].lower() == "pass":
+                self.respond("wrong coordinate")
+                return
+           
             coord = move_to_coord(args[1], self.board.size)
             move = coord_to_point(coord[0], coord[1], self.board.size)
-            print("move played", move)
-            print("empty points", self.board.get_empty_points())
-            #steps:
+            color = color_to_int(board_color)
             '''
             (a): if the move played is not in list of current empty points on the board, it is occupied 
             '''
+
             if  move not in self.board.get_empty_points():
                 self.respond("occupied")
                 return
@@ -347,7 +349,7 @@ class GtpConnection:
                 )
             self.respond()
         except Exception as e:
-            self.respond("Error: {}".format(str(e)))
+            self.respond("Illegal Move: \"{} {}\" {}".format(args[0], args[1], str(e)))
 
     def genmove_cmd(self, args: List[str]) -> None:
         board_color = args[0].lower()

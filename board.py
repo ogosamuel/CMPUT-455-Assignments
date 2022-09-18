@@ -11,6 +11,7 @@ Implements a basic Go board with functions to:
 The board uses a 1-dimensional representation with padding
 """
 
+from multiprocessing.sharedctypes import Value
 import numpy as np
 from typing import List, Tuple
 
@@ -92,16 +93,21 @@ class GoBoard(object):
         complicated cases such as suicide.
         """
         assert is_black_white(color)
+       
         if point == PASS:
-            return True
+            return False
         # Could just return False for out-of-bounds, 
         # but it is better to know if this is called with an illegal point
         assert self.pt(1, 1) <= point <= self.pt(self.size, self.size)
+        
         assert is_black_white_empty(self.board[point])
         if self.board[point] != EMPTY:
             return False
-        if point == self.ko_recapture:
-            return False
+        '''
+        should not be the case given no capture ever takes place
+        '''
+        # if point == self.ko_recapture:
+        #     return False
         return True
 
     def is_legal(self, point: GO_POINT, color: GO_COLOR) -> bool:
@@ -165,8 +171,10 @@ class GoBoard(object):
         check whether empty point is surrounded by stones of color
         (or BORDER) neighbors
         """
+        
         for nb in self._neighbors(point):
             nb_color = self.board[nb]
+         
             if nb_color != BORDER and nb_color != color:
                 return False
         return True
@@ -218,16 +226,31 @@ class GoBoard(object):
         and returns NO_POINT otherwise.
         This result is used in play_move to check for possible ko
         """
-        single_capture: GO_POINT = NO_POINT
+        # single_capture: GO_POINT = NO_POINT
+        '''
+            dont have to worry about ko - we just have to worry if a possible move will be a capture
+            and if it is that a certain block doesnt have the liberty then return true that a capture will take place
+            we then will raise error in play_move function to alert user of capture(NOGO)
+        '''
         opp_block = self._block_of(nb_point)
         if not self._has_liberty(opp_block):
-            captures = list(where1d(opp_block))
-            self.board[captures] = EMPTY
-            if len(captures) == 1:
-                single_capture = nb_point
-        return single_capture
+            return True 
+        return False
+            # captures = list(where1d(opp_block))
+            # # self.board[captures] = EMPTY
+            # if captures:
+            #     return True
+            
+       
+            # if len(captures) == 1:
+                # single_capture = nb_point
+        # return single_capture
 
+    '''
+    let it capture
+    '''
     def play_move(self, point: GO_POINT, color: GO_COLOR) -> bool:
+        
         """
         Play a move of color on point
         Returns whether move was legal
@@ -236,33 +259,51 @@ class GoBoard(object):
             return False
         # Special cases
         if point == PASS:
-            self.ko_recapture = NO_POINT
-            self.current_player = opponent(color)
-            self.last2_move = self.last_move
-            self.last_move = point
-            return True
+            return False
 
+        '''
+        creating a block that has no liberty is suicide:
+        : when u play a position, check to ensure the block has at least 1 liberty, else return False
+        '''
         # General case: deal with captures, suicide, and next ko point
         opp_color = opponent(color)
         in_enemy_eye = self._is_surrounded(point, opp_color)
         self.board[point] = color
         single_captures = []
         neighbors = self._neighbors(point)
+        block = self._block_of(point)
+        
+
+
         for nb in neighbors:
+            #possible capture happening here
             if self.board[nb] == opp_color:
                 single_capture = self._detect_and_process_capture(nb)
-                if single_capture != NO_POINT:
-                    single_captures.append(single_capture)
-        block = self._block_of(point)
+                #in this case a capture will take place and just dont play the move, 
+                # so basically leave the point on the board has empty
+                if single_capture == True:
+                    self.board[point] = EMPTY
+                    raise ValueError("capture")
+        '''
+        undo suicide move: basically saying that a move that would have resulted in suicide because the
+        new created block would have no liberties and this is disallowed
+        '''
         if not self._has_liberty(block):  # undo suicide move
             self.board[point] = EMPTY
-            return False
-        self.ko_recapture = NO_POINT
-        if in_enemy_eye and len(single_captures) == 1:
-            self.ko_recapture = single_captures[0]
+            raise ValueError("suicide")
+                # single_capture = self._detect_and_process_capture(nb)
+                # if single_capture != NO_POINT:
+                #     single_captures.append(single_capture)
+      
+        '''
+        we technically shouldnt have to worry about ko_recapture given that a capture never took place
+        '''
+        # self.ko_recapture = NO_POINT
+        # if in_enemy_eye and len(single_captures) == 1:
+        #     self.ko_recapture = single_captures[0]
         self.current_player = opponent(color)
-        self.last2_move = self.last_move
-        self.last_move = point
+        # self.last2_move = self.last_move
+        # self.last_move = point
         return True
 
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:

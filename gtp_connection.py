@@ -9,6 +9,7 @@ in the Deep-Go project by Isaac Henrion and Amos Storkey
 at the University of Edinburgh.
 """
 import traceback
+from turtle import color
 import numpy as np
 import re
 from sys import stdin, stdout, stderr
@@ -302,17 +303,26 @@ class GtpConnection:
         self.respond('unknown')
     ##capturing or suicide not allowed
     def gogui_rules_legal_moves_cmd(self, args):
-        colour = args.lower()
-        potential_moves=self.board.get_empty_points#Aim is to get all current empty points
+    
+        board_color = self.board.current_player
+        player_turnColor: str = "b" if board_color == 1 else "w"
+        colour: GO_COLOR = color_to_int(player_turnColor)
+        #more specific checking if any legal moves left for current player 
+        #ends when the player whose turn it is has no legal moves
+        moves_left = GoBoardUtil.generate_legal_moves(self.board, colour)
+        if not moves_left:
+            self.respond(moves_left)
+            return
+        #this is more general in that it checks all legal moves on board
+        potential_moves=self.board.get_empty_points()#Aim is to get all current empty points
         legal_move_list=[]#Empty return list
-        for i in range(0,potential_moves.size()):#Loop through all possible empty points
-            #Aim below is to chec if it can potentially play on the area, if passed the 2 simple checks, check capture and suicide
-            if (self.board.play_move(potential_moves[i],colour))==True:
-                    legal_move_list.append(potential_moves)
-        legal_move_list=format_point(legal_move_list)#I dont think this will work as well but not sure
-        self.respond(legal_move_list)
-        return legal_move_list
+        for i in potential_moves:
+            #basicaaly if u can play a move on a temporary board and it isnt suicide, capture, then by rule of nogo it is legal
+            if self.board.is_legal(i, colour):
+                legal_move_list.append(format_point(point_to_coord(i, self.board.size)).upper())
 
+
+        self.respond(sorted(legal_move_list))
     def play_cmd(self, args: List[str]) -> None:
         """
         play a move args[1] for given color args[0] in {'b','w'}
@@ -327,7 +337,7 @@ class GtpConnection:
                 self.respond("illegal move: \"{} {}\" wrong color".format(args[0], args[1]))
                 return
             if args[1].lower() == "pass":
-                self.respond("wrong coordinate")
+                self.respond("illegal move: \"{} {}\" wrong coordinate".format(args[0], args[1]))
                 return
            
             coord = move_to_coord(args[1], self.board.size)
@@ -336,7 +346,6 @@ class GtpConnection:
             '''
             (a): if the move played is not in list of current empty points on the board, it is occupied 
             '''
-
             if  move not in self.board.get_empty_points():
                 self.respond("occupied")
                 return

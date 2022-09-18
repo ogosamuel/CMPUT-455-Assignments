@@ -23,14 +23,24 @@ class GoBoardUtil(object):
         color:
             the color to generate the move for.
         """
-        moves: np.ndarray[GO_POINT] = board.get_empty_points()
-        # TODO use generator instead.
-        legal_moves: List[GO_POINT] = []
-        # TODO use generator instead.
-        for move in moves:
-            if board.is_legal(move, color):
-                legal_moves.append(move)
-        return legal_moves
+    
+        potential_moves= board.get_empty_points()#Aim is to get all current empty points
+      
+        legal_move_list=[]#Empty return list
+        for i in potential_moves:
+            #basicaaly if u can play a move on a temporary board and it isnt suicide, capture, then by rule of nogo it is legal
+            if board.is_legal(i, color):
+                legal_move_list.append(i)
+        
+        return legal_move_list
+        # moves: np.ndarray[GO_POINT] = board.get_empty_points()
+        # # TODO use generator instead.
+        # legal_moves: List[GO_POINT] = []
+        # # TODO use generator instead.
+        # for move in moves:
+        #     if board.is_legal(move, color):
+        #         legal_moves.append(move)
+    
 
     @staticmethod
     def generate_random_move(board: GoBoard, color: GO_COLOR, 

@@ -92,6 +92,7 @@ class GoBoard(object):
         If this function returns True: still need to check more
         complicated cases such as suicide.
         """
+     
         assert is_black_white(color)
        
         if point == PASS:
@@ -119,7 +120,10 @@ class GoBoard(object):
         if point == PASS:
             return True
         board_copy: GoBoard = self.copy()
-        can_play_move = board_copy.play_move(point, color)
+        try:
+            can_play_move = board_copy.play_move(point, color)
+        except:
+            return False
         return can_play_move
 
     def end_of_game(self) -> bool:
